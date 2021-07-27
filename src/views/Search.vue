@@ -1,54 +1,73 @@
 <template>
-  <div class="search-container">
-    <div class="search-head">
-      <van-icon name="arrow-left" class="arrow-left" />
-      <form action="/" class="search-content">
-        <van-search
-          v-model="value"
-          show-action
-          action-text="搜索"
-          :placeholder="place"
-          @search="onSearch"
-          @input="input"
-          @focus="focus"
+    <div class="search-container">
+      <div class="search-head">
+        <van-icon
+          name="arrow-left"
+          class="arrow-left"
+          @click="handleClick"
         />
-      </form>
-    </div>
-    <div class="like-search">
-      <van-list>
-        <van-cell
-          v-for="item in likeList"
-          :key="item.id"
-          @click="onSearch(item)"
-        >
-          <template>
-            <span class="custom-title" v-html="formatHtml(item)"></span>
-          </template>
-        </van-cell>
-      </van-list>
-    </div>
-    <div class="goods-list">
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-        <van-list
-          v-model="loading"
-          :finished="finished"
-          finished-text="没有更多了"
-          @load="onLoad"
-          :immediate-check="false"
-        >
-          <GoodsCard
-            v-for="item in goodsList"
+        <div class="search-content">
+          <van-search
+            v-model="value"
+            :placeholder="place"
+            show-action
+            @search="onSearch"
+            @input="input"
+            @focus="focus"
+          >
+            <template #action v-if="showList">
+              <div @touchend="onSearch(value)">搜索</div>
+            </template>
+            <template #action v-else>
+              <van-icon
+                name="shopping-cart-o"
+                class="shopping-cart-o"
+                :badge="badge"
+                id="shop-card"
+              />
+            </template>
+          </van-search>
+        </div>
+      </div>
+      <div class="like-search" v-if="likeList.length && showList">
+        <van-list>
+          <van-cell
+            v-for="item in likeList"
             :key="item.id"
-            v-bind="item"
-            :num="counterMap[item.id]"
-          />
+            @click="onSearch(item)"
+          >
+            <template>
+              <span class="custom-title" v-html="formatHtml(item)"></span>
+            </template>
+          </van-cell>
         </van-list>
-      </van-pull-refresh>
+      </div>
+      <div class="goods-list" v-if="goodsList.length && !showList">
+        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+          <van-list
+            v-model="loading"
+            :finished="finished"
+            finished-text="没有更多了"
+            @load="onLoad"
+            :immediate-check="false"
+          >
+            <GoodsCard
+              v-for="item in goodsList"
+              :key="item.id"
+              v-bind="item"
+              :num="counterMap[item.id]"
+            />
+          </van-list>
+        </van-pull-refresh>
+      </div>
+      <div class="my-history" v-if="likeList.length <= 0 && showList">
+        <History :searchList="searchList" @search="onSearch" />
+      </div>
     </div>
-  </div>
 </template>
 <script>
 import GoodsCard from "@/components/GoodsCard";
+import History from "@/components/History";
 import { mapState } from "vuex";
 export default {
   data() {
@@ -60,24 +79,61 @@ export default {
       loading: false,
       finished: false,
       refreshing: false,
-      page: 1,
+      page: 0,
+      size: 10,
+      goodsList: [],
+      showList: false,
+      total: 0,
+      searchList: [],
     };
   },
   components: {
     GoodsCard,
+    History,
   },
-  computed: mapState(["goodsList", "counterMap"]),
+  computed: {
+    ...mapState(["counterMap", "transitionName"]),
+    badge() {
+      const count = Object.values(this.counterMap).reduce(
+        (prev, next) => prev + next,
+        0
+      );
+      if (count > 99) {
+        return "99+";
+      } else if (count <= 0) {
+        return "";
+      }
+      return count;
+    },
+  },
+  created() {
+    this.searchList = JSON.parse(localStorage.getItem("searchList"));
+  },
   methods: {
     onSearch(val) {
-      if (!val) {
-        this.value = this.place;
-      } else {
-        this.value = val;
+      if (val) {
+        this.value = val.trim();
+        const item = this.searchList.find((item) => item.value == this.value);
+        if (item) {
+          item.time = new Date().getTime();
+          this.searchList.sort((a, b) => b.time - a.time);
+        } else {
+          this.searchList.unshift({
+            value: this.value,
+            time: new Date().getTime(),
+          });
+        }
+        if (this.searchList.length >= 11) {
+          this.searchList.pop();
+        }
+        localStorage.setItem("searchList", JSON.stringify(this.searchList));
         this.likeList = [];
-        this.$store.dispatch("getGoodsList", {
-          page: this.page,
-          type: val,
-        });
+        this.goodsList = [];
+        this.page = 0;
+        this.onLoad();
+        this.showList = true;
+      } else {
+        this.value = this.place;
       }
     },
     input(val) {
@@ -87,54 +143,64 @@ export default {
       clearTimeout(this.time);
       this.time = setTimeout(() => {
         this.$api.likeSearch({ likeValue: val }).then((r) => {
-          console.log(r);
+          this.showList = true;
           this.likeList = r.result;
           clearTimeout(this.time);
           this.time = null;
         });
       }, 300);
     },
-    focus() {},
+    focus() {
+      this.showList = true;
+    },
     formatHtml(item) {
       const reg = new RegExp(this.value, "g");
       return item.replace(reg, this.value.fontcolor("red"));
     },
-    onLoad() {
-      setTimeout(() => {
-        if (this.refreshing) {
-          this.refreshing = false;
-          return;
-        }
-        this.page += 1;
-        this.$store
-          .dispatch("getGoodsList", {
-            page: this.page,
-            sort: this.type,
-          })
-          .then((r) => {
-            if (r) {
-              this.loading = false;
-            } else {
-              this.finished = true;
-            }
-          });
-      }, 1000);
+    async onLoad() {
+      if (this.refreshing) {
+        this.refreshing = false;
+        return;
+      }
+      this.page += 1;
+      const value = await this.$api.search({
+        type: this.value,
+        page: this.page,
+        size: this.size,
+      });
+      if (!value.total == 0) {
+        this.loading = false;
+        this.goodsList = this.goodsList.concat(value.list);
+        this.total = value.total;
+      } else {
+        this.goodsList = [];
+      }
+      this.showList = false;
+      if (this.goodsList.length >= this.total) {
+        this.finished = true;
+        return;
+      }
     },
-    onRefresh() {
+    async onRefresh() {
       // 清空列表数据
-      this.$store.commit("setGoodsList", []);
+      this.goodsList = [];
       this.page = 1;
       this.finished = false;
 
       // 重新加载数据
-      this.$store.dispatch("getGoodsList", {
+      const value = await this.$api.search({
+        type: this.value,
         page: this.page,
-        sort: this.type,
+        size: this.size,
       });
+      this.goodsList = value.list;
       // 将 loading 设置为 true，表示处于加载状态
       this.loading = false;
       this.onLoad();
     },
+    handleClick(){
+      this.$router.goBack(); 
+    }
   },
 };
 </script>
@@ -153,11 +219,15 @@ export default {
     position: fixed;
     top: 0;
     left: 15px;
+    z-index: 100;
     .arrow-left {
       font-size: 22px;
     }
     .search-content {
-      flex: 1 1 auto;
+      flex: 1;
+      #shop-card {
+        font-size: 15px;
+      }
     }
   }
   .like-search {
@@ -167,12 +237,23 @@ export default {
     box-sizing: border-box;
     padding: 0 15px;
   }
-  .goods-list{
+  .goods-list {
     position: relative;
-    top: 50px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 15px;
+    top: 55px;
+    margin: 0 auto;
+    width: 345px;
+    z-index: 10;
+    background: #fff;
+  }
+  .van-pull-refresh {
+    overflow: unset;
+  }
+  .my-history {
+    position: absolute;
+    width: 350px;
+    top: 55px;
+    left: 10px;
+    z-index: 1;
   }
 }
 </style>

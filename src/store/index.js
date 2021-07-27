@@ -13,6 +13,7 @@ export default new Vuex.Store({
     size: 10,
     type: "",
     counterMap: {},
+    transitionName:'left',
   },
   mutations: {
     setLeftMeun(state, p) {
