@@ -9,11 +9,19 @@
       </div>
       <div
         class="price"
-        :class="{ active: type == 'price-down'||type =='price-up'}"
+        :class="{ active: type == 'price-down' || type == 'price-up' }"
         @touchend="changeType('price')"
       >
         价格
-        <van-icon :name=" type == 'price-down'?'arrow-down':''|| type =='price-up'? 'arrow-up':''" />
+        <van-icon
+          :name="
+            type == 'price-down'
+              ? 'arrow-down'
+              : '' || type == 'price-up'
+              ? 'arrow-up'
+              : ''
+          "
+        />
       </div>
     </div>
     <div class="list-content">
@@ -25,7 +33,12 @@
           @load="onLoad"
           :immediate-check="false"
         >
-          <GoodsCard v-for="item in goodsList" :key="item.id" v-bind="item" :num="counterMap[item.id]" />
+          <GoodsCard
+            v-for="item in goodsList"
+            :key="item.id"
+            v-bind="item"
+            :num="counterMap[item.id]"
+          />
         </van-list>
       </van-pull-refresh>
     </div>
@@ -47,7 +60,7 @@ export default {
   components: {
     GoodsCard,
   },
-  computed: mapState(["goodsList","counterMap"]),
+  computed: mapState(["goodsList", "counterMap"]),
   methods: {
     onLoad() {
       setTimeout(() => {
@@ -135,6 +148,6 @@ export default {
   overflow: auto;
 }
 .van-pull-refresh {
-    overflow: unset;
+  overflow: unset;
 }
 </style>

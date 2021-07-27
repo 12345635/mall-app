@@ -1,9 +1,9 @@
 <template>
   <div class="classify-container">
-    <div class="search-container">
+    <RouterLink class="search-container" tag="div" to="search">
       <van-icon name="search" />
       <div>苹果大减价1元一斤</div>
-    </div>
+    </RouterLink>
     <OneBar />
     <template v-if="!showSide">
       <LeftBar />

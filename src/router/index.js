@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
 import Classify from "../views/Classify.vue"
 import Shopping from "../views/Shopping.vue"
+import Search from "../views/Search.vue"
 
 Vue.use(VueRouter)
 const routes = [
@@ -22,6 +23,11 @@ const routes = [
         component: Shopping,
       }
     ]
+  },
+  {
+    path: '/search',
+    name:"Search",
+    component:Search,
   },
   {
     path: '*',
