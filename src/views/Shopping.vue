@@ -3,14 +3,17 @@
     <div class="top-bar">
       <van-nav-bar title="购物车" right-text="删除" @click-right="del" />
     </div>
-    <div class="card-list">
-      <van-checkbox-group v-model="result" ref="checkboxGroup">
-        <div class="card-box" v-for="item in shopList" :key="item.id">
-          <van-checkbox class="check" :name="item.id"></van-checkbox>
-          <GoodsCard v-bind="item" :num="counterMap[item.id]" :onify="true" />
-        </div>
-      </van-checkbox-group>
-    </div>
+    <template>
+      <div class="card-list" v-if="shopList.length > 0">
+        <van-checkbox-group v-model="result" ref="checkboxGroup">
+          <div class="card-box" v-for="item in shopList" :key="item.id">
+            <van-checkbox class="check" :name="item.id"></van-checkbox>
+            <GoodsCard v-bind="item" :num="counterMap[item.id]" :onify="true" />
+          </div>
+        </van-checkbox-group>
+      </div>
+      <van-empty description="快去首页逛逛吧" v-else />
+    </template>
     <van-submit-bar
       :price="allMonery"
       :button-text="`结算${totalNum}`"
@@ -84,13 +87,12 @@ export default {
         try {
           await Dialog.confirm({ message: "是否确定删除商品" });
           this.result.forEach((id) => {
-            console.log(id)
             this.$store.commit("storageChange", { id, value: -Infinity });
-            this.shopList = this.shopList.filter((item) =>!item.id === id);
+            this.shopList = this.shopList.filter((item) => !item.id === id);
           });
           this.getAllData();
         } catch (error) {
-          console.log(error)
+          console.log(error);
           Toast("用户点击了取消");
         }
       } else {
