@@ -1,26 +1,28 @@
 <template>
   <div class="shopping-container">
-    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-      {{ shopList }}
-      <van-list
-        v-model="loading"
-        :finished="finished"
-        finished-text="没有更多了"
-        @load="onLoad"
-        :immediate-check="false"
-      >
-        <GoodsCard
-          v-for="item in shopList"
-          :key="item.id"
-          v-bind="item"
-          :num="counterMap[item.id]"
-        />
-      </van-list>
-    </van-pull-refresh>
+    <div class="top-bar">
+      <van-nav-bar title="购物车" right-text="删除" @click-right="del" />
+    </div>
+    <div class="card-list">
+      <van-checkbox-group v-model="result" ref="checkboxGroup">
+        <div class="card-box" v-for="item in shopList" :key="item.id">
+          <van-checkbox class="check" :name="item.id"></van-checkbox>
+          <GoodsCard v-bind="item" :num="counterMap[item.id]" :onify="true" />
+        </div>
+      </van-checkbox-group>
+    </div>
+    <van-submit-bar
+      :price="allMonery"
+      :button-text="`结算${totalNum}`"
+      @submit="onSubmit"
+    >
+      <van-checkbox v-model="checked" @click="toggleAll">全选</van-checkbox>
+    </van-submit-bar>
   </div>
 </template>
 <script>
 import GoodsCard from "@/components/GoodsCard";
+import { Dialog, Toast } from "vant";
 import { mapState } from "vuex";
 export default {
   components: {
@@ -28,78 +30,112 @@ export default {
   },
   data() {
     return {
-      loading: false,
-      finished: false,
-      refreshing: false,
-      type: "all",
-      page: 1,
       shopList: [],
+      result: [],
+      checked: false,
     };
   },
   computed: {
-    ...mapState(["goodsList", "counterMap"]),
+    ...mapState(["counterMap"]),
+    totalNum() {
+      const result = this.shopList.filter((item) =>
+        this.result.includes(item.id)
+      );
+      const res = result.reduce(
+        (prev, next) => prev + this.counterMap[next.id],
+        0
+      );
+      return res;
+    },
+    allMonery() {
+      const result = this.shopList.filter((item) =>
+        this.result.includes(item.id)
+      );
+      return result.reduce((prev, next) => {
+        const res = this.counterMap[next.id];
+        if (next.price_off) {
+          return prev + Math.round(res * next.price_off * 100);
+        }
+        return prev + Math.round(res * next.price * 100);
+      }, 0);
+    },
   },
   created() {
-    this.$api.getGoodsByIds({ value: 2 }).then((value) => {
-      this.shopList = value;
-    });
+    this.getAllData();
+  },
+  watch: {
+    result() {
+      if (this.result.length === this.shopList.length) {
+        this.checked = true;
+      } else {
+        this.checked = false;
+      }
+    },
   },
   methods: {
-    onLoad() {
-      setTimeout(() => {
-        if (this.refreshing) {
-          this.refreshing = false;
-          return;
-        }
-        this.page += 1;
-        this.$store
-          .dispatch("getGoodsList", {
-            page: this.page,
-            sort: this.type,
-          })
-          .then((r) => {
-            if (r) {
-              this.loading = false;
-            } else {
-              this.finished = true;
-            }
-          });
-      }, 1000);
-    },
-    onRefresh() {
-      // 清空列表数据
-      this.$store.commit("setGoodsList", []);
-      this.page = 1;
-      this.finished = false;
-
-      // 重新加载数据
-      this.$store.dispatch("getGoodsList", {
-        page: this.page,
-        sort: this.type,
+    getAllData() {
+      const result = Object.keys(this.counterMap);
+      this.$api.getGoodsByIds(result.join()).then((value) => {
+        this.shopList = value.list;
       });
-      // 将 loading 设置为 true，表示处于加载状态
-      this.loading = false;
-      this.onLoad();
     },
-    changeType(type) {
-      if (type == "all") {
-        this.type = "all";
-      } else if (type == "sale") {
-        this.type = "sale";
-      } else {
-        if (this.type == "price-up") {
-          this.type = "price-down";
-        } else {
-          this.type = "price-up";
+    async del() {
+      if (this.result.length) {
+        try {
+          await Dialog.confirm({ message: "是否确定删除商品" });
+          this.result.forEach((id) => {
+            console.log(id)
+            this.$store.commit("storageChange", { id, value: -Infinity });
+            this.shopList = this.shopList.filter((item) =>!item.id === id);
+          });
+          this.getAllData();
+        } catch (error) {
+          console.log(error)
+          Toast("用户点击了取消");
         }
+      } else {
+        Toast("请选择要删除的商品");
       }
-      this.onRefresh();
+    },
+    onSubmit() {},
+    toggleAll() {
+      this.checked
+        ? this.$refs.checkboxGroup.toggleAll(true)
+        : this.$refs.checkboxGroup.toggleAll(false);
     },
   },
 };
 </script>
 <style lang="less" scoped>
 .shopping-container {
-  padding: 20px;
+  background: #eee;
+  min-height: 100vh;
+  .top-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+  }
+  .card-list {
+    width: 100%;
+    position: absolute;
+    top: 46px;
+    z-index: 0;
+    box-sizing: border-box;
+    padding: 10px 10px 100px 10px;
+    background: #fff;
+    .card-box {
+      display: flex;
+      justify-content: center;
+    }
+    .check {
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+  }
+  .van-submit-bar {
+    position: fixed;
+    bottom: 50px;
+  }
 }
 </style>

@@ -35,11 +35,11 @@
 <script>
 import Animate from "@/tools/Animate";
 export default {
-  props: ["images", "tags", "title", "desc", "price", "id", "num"],
+  props: ["images", "tags", "title", "desc", "price", "id", "num", "onify"],
   methods: {
     counter(id, num) {
       this.$store.commit("storageChange", { id, value: num });
-      if(num == -1){
+      if (num == -1 || this.onify) {
         return;
       }
       // 获取图片的位置和宽高
@@ -54,7 +54,6 @@ export default {
       //   图片移动的结束位置
       const endX = sLeft + shopWidth / 2;
       const endY = sTop + shopHeight / 2;
-      console.log(this.$refs.img.getBoundingClientRect(),startY, startX, imgWidth, imgHeight, endX, endY);
       Animate({
         startY,
         startX,
