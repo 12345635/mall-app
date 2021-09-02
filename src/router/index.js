@@ -1,11 +1,10 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
-import Classify from "../views/Classify.vue"
-import Shopping from "../views/Shopping.vue"
-import Search from "../views/Search.vue"
-
-Vue.use(VueRouter)
+if(!window.Vue){
+  Vue.use(VueRouter);
+}
+Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
@@ -15,19 +14,19 @@ const routes = [
       {
         path:"/classify",
         name:"Classify",
-        component: Classify,
+        component:()=>import(/* webpackChunkName: "Classify" */ "../views/Classify.vue"),
       },
       {
         path:"/shopping",
         name:"Shopping",
-        component: Shopping,
+        component:()=>import(/* webpackChunkName: "Shoppgin" */ "../views/Shopping.vue"),
       }
     ]
   },
   {
     path: '/search',
     name:"Search",
-    component:Search,
+    component:()=>import(/* webpackChunkName: "Search" */ "../views/Search.vue"),
   },
   {
     path: '*',
@@ -36,7 +35,7 @@ const routes = [
 ]
 
 const router = new VueRouter({
-  mode: 'history',
+  // mode: 'history',
   base: process.env.BASE_URL,
   routes
 })

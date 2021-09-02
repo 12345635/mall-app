@@ -1,4 +1,5 @@
 <template>
+<!-- 分类页面 -->
   <div class="classify-container">
     <RouterLink class="search-container" tag="div" to="search">
       <van-icon name="search" />

@@ -134,16 +134,26 @@ export default {
     };
   },
   methods: {
+    // 设置滚动条滚动
     scroll(index, e) {
+      // 正在移动直接返回
       if (this.move) {
         return;
       }
+      // 保存以下index
       this.index = index;
+      // 获取refs里面的oneTab元素
       const { oneTab } = this.$refs;
+      // 获取每个子元素的宽度
       const itemWidth = e.target.offsetWidth;
+      // 获取子元素距离左边的距离
       const itemLeft = e.target.getBoundingClientRect().left;
+      // 获取 oneTab 父元素的宽度
       const warpperWidth = this.$refs.oneTab.offsetWidth;
+      // 设置 oneTab  父元素滚动条滚动的距离
       oneTab.scrollLeft += itemWidth / 2 + itemLeft - warpperWidth / 2;
+      
+      // 获取左侧导航栏信息
       this.$store.dispatch("getLeftMeun", {
         type: this.menuList[this.index].title,
       });
@@ -151,6 +161,7 @@ export default {
     },
   },
   created() {
+    // 元素创建之后直接请求数组中第一项的商品
     this.$store.dispatch("getLeftMeun", { type: this.menuList[0].title });
     this.$store.commit("setIndex", 0);
   },

@@ -1,4 +1,5 @@
 <template>
+  <!-- 商品列表 -->
   <div class="goods-list-container">
     <div class="list-header van-hairline--top-bottom">
       <div :class="{ active: type == 'all' }" @touchend="changeType('all')">
@@ -62,6 +63,7 @@ export default {
   },
   computed: mapState(["goodsList", "counterMap"]),
   methods: {
+    // 设置是否正在加载
     onLoad() {
       setTimeout(() => {
         if (this.refreshing) {
@@ -83,6 +85,7 @@ export default {
           });
       }, 1000);
     },
+    // 向下刷新
     onRefresh() {
       // 清空列表数据
       this.$store.commit("setGoodsList", []);
@@ -98,6 +101,7 @@ export default {
       this.loading = false;
       this.onLoad();
     },
+    // 商品排序
     changeType(type) {
       if (type == "all") {
         this.type = "all";

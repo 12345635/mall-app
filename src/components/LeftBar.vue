@@ -1,4 +1,5 @@
 <template>
+<!-- 左侧导航 -->
   <div class="left-bar-container" ref="leftBar">
     <div
       class="bar-item"
@@ -25,7 +26,9 @@ export default {
     ...mapState(["leftMeun", "index"]),
   },
   created() {
+    // 清空商品缓存
     this.$store.commit("setGoodsList", []);
+    // 获取商品列表
     this.$store.dispatch("getGoodsList", {
       type: this.leftMeun[0],
       page: 1,
@@ -33,18 +36,28 @@ export default {
     });
   },
   methods: {
+    // 设置滚动条滚动距离
     scroll(index, e) {
       if (this.move) {
         return;
       }
+      // 保存以下当前点击元素的index
       this.$store.commit("setIndex", index);
+      // 找到refs中名叫leftBar的元素
       const { leftBar } = this.$refs;
+      // 获取子元素的高度
       const sonHeight = e.target.offsetHeight;
+      // 获取子元素距离上边的高度
       const sonTop = e.target.getBoundingClientRect().top;
+      // 获取leftBar的高度
       const pHeight = leftBar.offsetHeight;
+      // 获取leftBar距离上边的高度
       const pTop = leftBar.getBoundingClientRect().top;
+      // 设置leftBar滚动条滚动的距离
       leftBar.scrollTop += sonTop + sonHeight / 2 - pTop - pHeight / 2;
+      // 清空商品列表
       this.$store.commit("setGoodsList", []);
+      // 重新获取商品列表
       this.$store.dispatch("getGoodsList", {
         type: this.leftMeun[index],
         page: 1,
@@ -86,7 +99,7 @@ export default {
     content: "";
   }
 }
-.left-bar-container::-webkit-scrollbar {
+.left-bar-container::-webkit-scrollbar {//设置滚动条的样式
   width: 0;
   background: none;
 }

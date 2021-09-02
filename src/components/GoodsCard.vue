@@ -1,4 +1,5 @@
 <template>
+<!-- 商品卡片 -->
   <div class="card-container van-hairline--bottom">
     <div class="card-img">
       <img :src="images[0]" ref="img" />

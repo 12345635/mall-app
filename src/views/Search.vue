@@ -1,7 +1,12 @@
 <template>
+  <!-- 搜索页面处理 -->
   <div class="search-container">
     <div class="search-head">
-      <van-icon name="arrow-left" class="arrow-left" />
+      <van-icon
+        name="arrow-left"
+        class="arrow-left"
+        @touchend="$router.go(-1)"
+      />
       <form action="/" class="search-content">
         <van-search
           v-model="value"
@@ -11,6 +16,8 @@
           @search="onSearch"
           @input="input"
           @focus="focus"
+          @clear="clear"
+          @blur="blur"
         />
       </form>
     </div>
@@ -27,24 +34,36 @@
         </van-cell>
       </van-list>
     </div>
-    <div class="goods-list">
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-        <van-list
-          v-model="loading"
-          :finished="finished"
-          finished-text="没有更多了"
-          @load="onLoad"
-          :immediate-check="false"
+    <template>
+      <div class="searchHistory" v-show="!showGoods">
+        <div
+          class="item"
+          v-for="item in search"
+          :key="item"
+          @touchend="onSearch(item)"
         >
-          <GoodsCard
-            v-for="item in goodsList"
-            :key="item.id"
-            v-bind="item"
-            :num="counterMap[item.id]"
-          />
-        </van-list>
-      </van-pull-refresh>
-    </div>
+          {{ item }}
+        </div>
+      </div>
+      <div class="goods-list" v-show="showGoods">
+        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+          <van-list
+            v-model="loading"
+            :finished="finished"
+            finished-text="没有更多了"
+            @load="onLoad"
+            :immediate-check="false"
+          >
+            <GoodsCard
+              v-for="item in goodsList"
+              :key="item.id"
+              v-bind="item"
+              :num="counterMap[item.id]"
+            />
+          </van-list>
+        </van-pull-refresh>
+      </div>
+    </template>
   </div>
 </template>
 <script>
@@ -56,19 +75,29 @@ export default {
       place: "请输入搜索",
       value: this.place,
       likeList: [],
+      // 搜索记录
+      search: [],
       time: null,
       loading: false,
       finished: false,
       refreshing: false,
       page: 1,
+      showGoods: false,
     };
   },
   components: {
     GoodsCard,
   },
   computed: mapState(["goodsList", "counterMap"]),
+  created() {
+    // 清除以下缓存
+    this.$store.commit("setGoodsList", []);
+    this.search = JSON.parse(localStorage.getItem("search")) || [];
+  },
   methods: {
+    // 请求商品列表
     onSearch(val) {
+      this.$store.commit("setGoodsList", []);
       if (!val) {
         this.value = this.place;
       } else {
@@ -78,27 +107,51 @@ export default {
           page: this.page,
           type: val,
         });
+        if (this.search.includes(val)) {
+          // 删除数组原有的，保证只有一个
+          this.search.splice(this.search.indexOf(val),1);
+          // 将原有的添加到最前面，保证实时更新
+          this.search.unshift(val)
+        } else {
+          // 没有就添加一条数据
+          this.search.push(val);
+        }
+        localStorage.setItem("search", JSON.stringify(this.search));
       }
+      this.showGoods = true;
     },
     input(val) {
+      // 没有值直接返回
       if (!val) {
         return;
       }
       clearTimeout(this.time);
       this.time = setTimeout(() => {
         this.$api.likeSearch({ likeValue: val }).then((r) => {
-          console.log(r);
           this.likeList = r.result;
           clearTimeout(this.time);
           this.time = null;
         });
       }, 300);
     },
-    focus() {},
+    // 鼠标聚焦事件
+    focus() {
+      this.showGoods = false;
+    },
+    // 鼠标失去焦点事件
+    blur() {
+      this.showGoods = true;
+    },
+    // 点击清除事件
+    clear() {
+      this.$store.commit("setGoodsList", []);
+    },
+    // 处理返回过来的字符串
     formatHtml(item) {
       const reg = new RegExp(this.value, "g");
       return item.replace(reg, this.value.fontcolor("red"));
     },
+    // 滚动加载
     onLoad() {
       setTimeout(() => {
         if (this.refreshing) {
@@ -120,6 +173,7 @@ export default {
           });
       }, 1000);
     },
+    // 下拉刷新
     onRefresh() {
       // 清空列表数据
       this.$store.commit("setGoodsList", []);
@@ -167,12 +221,23 @@ export default {
     box-sizing: border-box;
     padding: 0 15px;
   }
-  .goods-list{
+  .goods-list,
+  .searchHistory {
     position: relative;
     top: 50px;
     width: 100%;
     box-sizing: border-box;
     padding: 0 15px;
+  }
+  .searchHistory > .item {
+    display: inline-block;
+    height: 35px;
+    line-height: 35px;
+    box-sizing: border-box;
+    padding: 0px 15px;
+    margin-right: 5px;
+    margin-top: 5px;
+    background: rgba(0, 0, 0, 0.1);
   }
 }
 </style>
