@@ -1,16 +1,18 @@
 <template>
-<!-- 商品卡片 -->
+  <!-- 商品卡片 -->
   <div class="card-container van-hairline--bottom">
     <div class="card-img">
       <img :src="images[0]" ref="img" />
     </div>
     <div class="card-content">
       <div class="title overflow-hidden">{{ title }}</div>
-      <div class="desc overflow-hidden">{{ desc }}</div>
+      <div class="desc overflow-hidden">{{ desc }}</div> 
+      <div class="prices">￥{{ price }}</div>
+      <span v-if="price_off">限时折扣价{{ price_off }}</span>
       <div class="tags">
         <div v-for="item in tags" :key="item">{{ item }}</div>
       </div>
-      <div class="prices">￥{{ price }}</div>
+     
       <div class="counter">
         <div v-if="num">
           <img
@@ -36,7 +38,17 @@
 <script>
 import Animate from "@/tools/Animate";
 export default {
-  props: ["images", "tags", "title", "desc", "price", "id", "num", "onify"],
+  props: [
+    "images",
+    "tags",
+    "title",
+    "desc",
+    "price",
+    "id",
+    "num",
+    "price_off",
+    "onify",
+  ],
   methods: {
     counter(id, num) {
       this.$store.commit("storageChange", { id, value: num });
@@ -110,10 +122,13 @@ export default {
       }
     }
     .prices {
+      display: inline-block;
+      width: auto;
       color: #ff1a90;
       font-size: 14px;
       font-weight: 600;
       margin-top: 4px;
+      margin-right: 4px;
     }
     .counter {
       position: absolute;

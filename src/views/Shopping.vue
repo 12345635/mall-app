@@ -82,6 +82,9 @@ export default {
         this.checked = false;
       }
     },
+    counterMap(){
+      this.getAllData();
+    }
   },
   methods: {
     // 获取商品具体的信息
